@@ -211,6 +211,7 @@ class MultiTaskNet(nn.Module):
         B = None
         ### START CODE HERE ###
         # Item bias terms (Matrix Factorization Only)
+        B = ZeroEmbedding(num_items, 1)
 
         ### END CODE HERE ###
         return B

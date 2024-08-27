@@ -235,9 +235,15 @@ class MultiTaskNet(nn.Module):
         mlp_layers = None
         ### START CODE HERE ###
         # MLP layer for regression task
-        
+        mlp_layers = nn.ModuleList([])
+
+        for i in range(len(layer_sizes)):
+            if i != len(layer_sizes[i]) - 1:
+                mlp_layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+                mlp_layers.append(nn.ReLU())
 
         # Add final linear layer to the network
+        mlp_layers.append(nn.Linear(layer_sizes[-1]))
 
         ### END CODE HERE ###
         return mlp_layers

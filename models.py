@@ -181,14 +181,14 @@ class MultiTaskNet(nn.Module):
         they are returned.
         """
         U_reg = Q_reg = U_fact = Q_fact = None
-        ### START CODE HERE ###
+        
 
         U_reg = ScaledEmbedding(num_users, embedding_dim)
         Q_reg = ScaledEmbedding(num_items, embedding_dim)
         U_fact = ScaledEmbedding(num_users, embedding_dim)
         Q_fact = ScaledEmbedding(num_items, embedding_dim)
         
-        ### END CODE HERE ###
+
         return U_reg, Q_reg, U_fact, Q_fact
     
     def init_item_bias(self, num_users, num_items):
@@ -233,19 +233,19 @@ class MultiTaskNet(nn.Module):
             MLP network containing Linear and ReLU layers
         """
         mlp_layers = None
-        ### START CODE HERE ###
+        
         # MLP layer for regression task
-        mlp_layers = nn.ModuleList([])
+        layers = []
 
         for i in range(len(layer_sizes)):
-            if i != len(layer_sizes[i]) - 1:
-                mlp_layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
-                mlp_layers.append(nn.ReLU())
+            if i != len(layer_sizes) - 1:
+                layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+                layers.append(nn.ReLU())
 
         # Add final linear layer to the network
-        mlp_layers.append(nn.Linear(layer_sizes[-1]))
+        layers.append(nn.Linear(layer_sizes[-1], 1))
+        mlp_layers = nn.Sequential(*layers)
 
-        ### END CODE HERE ###
         return mlp_layers
 
     def forward_with_embedding_sharing(self, user_ids, item_ids):
@@ -253,15 +253,25 @@ class MultiTaskNet(nn.Module):
         Please see forward() docstrings for reference
         """
         predictions = score = None
-        ### START CODE HERE ###
         
+        user_embeddings = self.U(user_ids)
+        item_embeddings = self.Q(item_ids)
+        item_biases = self.B(item_ids)
 
         # Regression head
+
+        element_wise_product = user_embeddings * item_embeddings
+        concatenated = torch.cat([user_embeddings, item_embeddings, element_wise_product], dim=1)
+        score = self.mlp_layers(concatenated)
+        score = torch.squeeze(score)
+
+        # Matrix Factorization Head
+        dot_prod = torch.bmm(user_embeddings.unsqueeze(1), item_embeddings.unsqueeze(2))
+        dot_prod = dot_prod.squeeze(-1)
+        predictions = dot_prod + item_biases
+        predictions = torch.squeeze(predictions)
         
-
-        # Matrix Factorization Head  
-
-        ### END CODE HERE ###
+        
         return predictions, score
     
     def forward_without_embedding_sharing(self, user_ids, item_ids):
@@ -269,13 +279,25 @@ class MultiTaskNet(nn.Module):
         Please see forward() docstrings for reference
         """
         predictions = score = None
-        ### START CODE HERE ###
+        
+        user_embeddings_reg = self.U_reg(user_ids)
+        user_embeddings_fact = self.U_fact(user_ids)
+        item_embeddings_reg = self.Q_reg(item_ids)
+        item_embeddings_fact = self.Q_fact(item_ids)
+        item_biases = self.B(item_ids)
         
 
         # Regression head
-        
+        element_wise_product = user_embeddings_reg * item_embeddings_reg
+        concatenated = torch.cat([user_embeddings_reg, item_embeddings_reg, element_wise_product], dim=1)
+        score = self.mlp_layers(concatenated)
+        score = torch.squeeze(score)
 
         # Matrix Factorization Head 
-
-        ### END CODE HERE ###
+        dot_prod = torch.bmm(user_embeddings_fact.unsqueeze(1), item_embeddings_fact.unsqueeze(2))
+        dot_prod = dot_prod.squeeze(-1)
+        
+        predictions = dot_prod + item_biases
+        predictions = predictions.squeeze(-1)
+        
         return predictions, score

@@ -141,6 +141,9 @@ class MultiTaskNet(nn.Module):
         """
         U = Q = None
         ### START CODE HERE ###
+
+        U = ScaledEmbedding(num_users, embedding_dim)
+        Q = ScaledEmbedding(num_items, embedding_dim)
         
         ### END CODE HERE ###
         return U, Q
@@ -179,6 +182,11 @@ class MultiTaskNet(nn.Module):
         """
         U_reg = Q_reg = U_fact = Q_fact = None
         ### START CODE HERE ###
+
+        U_reg = ScaledEmbedding(num_users, embedding_dim)
+        Q_reg = ScaledEmbedding(num_items, embedding_dim)
+        U_fact = ScaledEmbedding(num_users, embedding_dim)
+        Q_fact = ScaledEmbedding(num_items, embedding_dim)
         
         ### END CODE HERE ###
         return U_reg, Q_reg, U_fact, Q_fact
